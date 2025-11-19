@@ -1,0 +1,53 @@
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Build
+build/
+dist/
+coverage/
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# React
+/client/public/coverage
+/client/public/build
+/client/public/dist
+/client/src/coverage
+/client/src/build
+/client/src/dist
+
+# Python
+/engine/venv/
+/engine/__pycache__/
+/engine/*.pyc
+/engine/*.pyo
+/engine/*.pyd
+/engine/*.egg-info/
+/engine/dist/
+/engine/build/
+
+# Supabase
+/server/config/supabase.js
+
+# Cache
+/engine/data/
