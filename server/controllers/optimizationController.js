@@ -1,71 +1,88 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const pool = require('../config/db'); // <--- Import DB
 
-// Controller untuk menangani request optimasi
+// 1. FUNGSI RUN OPTIMIZATION (POST)
 const runOptimization = (req, res) => {
     const { tickers, riskAversion } = req.body;
-
-    // 1. Validasi Input Dasar
+    
+    // ... (Validasi input tetap sama) ...
     if (!tickers || !Array.isArray(tickers) || tickers.length === 0) {
-        return res.status(400).json({ error: "Ticker saham wajib diisi dan berupa array." });
+        return res.status(400).json({ error: "Ticker saham wajib diisi." });
     }
-
-    // Default risk aversion jika user tidak mengirim
     const riskParam = riskAversion || 0.5;
     const tickerString = tickers.join(',');
-
-    // 2. Tentukan Path Script Python
-    // Kita asumsikan folder 'engine' sejajar dengan folder 'server'
     const scriptPath = path.join(__dirname, '../../engine/optimizer.py');
 
-    console.log(`⚙️ Menjalankan optimasi untuk: ${tickerString} dengan Risk: ${riskParam}`);
+    console.log(`⚙️ Processing: ${tickerString} (Risk: ${riskParam})`);
 
-    // 3. Spawn Child Process (Panggil Python)
-    // NOTE: Jika Anda menggunakan Virtual Environment (venv), ganti 'python' 
-    // dengan path absolut ke python di venv, misal: '../engine/venv/bin/python'
     const pythonProcess = spawn('python', [scriptPath, tickerString, riskParam]);
 
     let dataString = '';
     let errorString = '';
 
-    // 4. Tangkap Output (stdout) dari Python
-    pythonProcess.stdout.on('data', (data) => {
-        dataString += data.toString();
-    });
+    pythonProcess.stdout.on('data', (data) => { dataString += data.toString(); });
+    pythonProcess.stderr.on('data', (data) => { errorString += data.toString(); });
 
-    // 5. Tangkap Error (stderr) jika ada
-    pythonProcess.stderr.on('data', (data) => {
-        errorString += data.toString();
-        console.error(`Python Error: ${data}`);
-    });
-
-    // 6. Ketika Proses Selesai
-    pythonProcess.on('close', (code) => {
+    pythonProcess.on('close', async (code) => { // <--- Tambahkan async
         if (code !== 0) {
-            return res.status(500).json({ 
-                error: "Gagal menjalankan algoritma genetika.",
-                details: errorString 
-            });
+            return res.status(500).json({ error: "Engine Error", details: errorString });
         }
 
         try {
-            // Parse string JSON dari Python menjadi Object JavaScript
             const jsonResult = JSON.parse(dataString);
-            
-            // (Opsional) Di sini nanti kita bisa simpan ke Supabase sebelum return
-            
-            // Kirim hasil ke Frontend
+
+            // === BAGIAN BARU: SIMPAN KE DB ===
+            if (jsonResult.status === 'success') {
+                try {
+                    const insertQuery = `
+                        INSERT INTO optimization_history (tickers, risk_aversion, result_data)
+                        VALUES ($1, $2, $3)
+                        RETURNING id, created_at
+                    `;
+                    
+                    // Kita simpan jsonResult utuh ke kolom result_data
+                    const savedRecord = await pool.query(insertQuery, [
+                        tickers, 
+                        riskParam, 
+                        jsonResult
+                    ]);
+                    
+                    console.log(`💾 History saved with ID: ${savedRecord.rows[0].id}`);
+                    
+                    // Sertakan ID history di response agar frontend tahu
+                    jsonResult.history_id = savedRecord.rows[0].id;
+                } catch (dbErr) {
+                    console.error("⚠️ Gagal menyimpan ke DB:", dbErr.message);
+                    // Jangan gagalkan response ke user cuma karena gagal simpan history
+                }
+            }
+            // =================================
+
             res.json(jsonResult);
             
         } catch (e) {
-            console.error("Gagal parsing output JSON:", e);
-            // Kadang Python print warning yang bukan JSON, ini handle errornya
-            res.status(500).json({ 
-                error: "Format output dari engine tidak valid.", 
-                rawOutput: dataString 
-            });
+            console.error("JSON Parse Error:", e);
+            res.status(500).json({ error: "Invalid Output", raw: dataString });
         }
     });
 };
 
-module.exports = { runOptimization };
+// 2. FUNGSI GET HISTORY (GET) - UNTUK MENAMPILKAN LIST
+const getHistory = async (req, res) => {
+    try {
+        // Ambil 10 history terakhir
+        const result = await pool.query(`
+            SELECT id, created_at, tickers, risk_aversion, result_data
+            FROM optimization_history 
+            ORDER BY created_at DESC 
+            LIMIT 10
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Gagal mengambil history" });
+    }
+};
+
+module.exports = { runOptimization, getHistory };

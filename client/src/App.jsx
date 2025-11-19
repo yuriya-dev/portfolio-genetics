@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { optimizePortfolio } from './services/api';
 import ResultsDashboard from './components/ResultsDashboard';
-import { Plus, Trash2, Cpu, Loader2 } from 'lucide-react';
+import HistorySidebar from './components/HistorySidebar';
+import { Plus, Trash2, Cpu, Loader2, History } from 'lucide-react';
 
 function App() {
   // State Input
@@ -13,6 +14,9 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [error, setError] = useState(null);
+
+  // State History
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Handlers
   const addTicker = (e) => {
@@ -57,6 +61,13 @@ function App() {
             </h1>
           </div>
           <div className="text-xs text-slate-500 font-mono">v1.0 Beta</div>
+          <button 
+              onClick={() => setIsHistoryOpen(true)}
+              className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-white transition bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg border border-slate-700"
+            >
+            <History size={18} />
+            <span>Riwayat</span>
+          </button>
         </div>
       </header>
 
@@ -170,6 +181,16 @@ function App() {
 
         </div>
       </main>
+
+      {/* Komponen Sidebar */}
+      <HistorySidebar 
+        isOpen={isHistoryOpen} 
+        onClose={() => setIsHistoryOpen(false)} 
+        onLoadHistory={(savedData) => {
+          setResultData(savedData); // Masukkan data lama ke dashboard
+          setTickers(savedData.composition.map(c => c.ticker)); // (Opsional) Update input field sesuai history
+        }}
+      />
     </div>
   );
 }
