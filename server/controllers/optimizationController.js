@@ -19,7 +19,11 @@ const runOptimization = (req, res) => {
 
     console.log(`⚙️ Processing: ${tickerString} for Session: ${currentSession}`);
 
-    const pythonProcess = spawn('python', [scriptPath, tickerString, riskParam]);
+    // Jika di Windows (Local), gunakan 'python'. 
+    // Jika di Linux/Render (Production), gunakan 'python3'.
+    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+
+    const pythonProcess = spawn(pythonCommand, [scriptPath, tickerString, riskParam]);
 
     let dataString = '';
     let errorString = '';
