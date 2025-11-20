@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import { getHistoryList } from '../services/api';
 import { X, Clock, ChevronRight, RefreshCw } from 'lucide-react';
 
 const HistorySidebar = ({ isOpen, onClose, onLoadHistory }) => {
   const [historyList, setHistoryList] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Fungsi ambil data dari Backend
+  // Fungsi ambil data dari Backend (Refactored)
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/history');
-      setHistoryList(res.data);
+      const data = await getHistoryList(); // <--- Pakai fungsi dari api.js
+      setHistoryList(data);
     } catch (err) {
       console.error("Gagal ambil history:", err);
     } finally {
