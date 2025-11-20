@@ -1,13 +1,14 @@
 import React from 'react';
 import { Cpu, History } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const Header = ({ onOpenHistory }) => {
   return (
     <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="bg-emerald-500 p-2 rounded-lg">
-            <Cpu className="text-slate-900" size={24} />
+          <div className="w-12 h-12">
+            <img src={logo} alt="logo" />
           </div>
           <h1 className="text-xl font-bold tracking-tight text-white">
             Genetic<span className="text-emerald-400">Portfolio</span>
