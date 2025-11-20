@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// Ganti URL ini nanti jika sudah deploy (misal: https://my-app.onrender.com/api)
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // --- FUNGSI UTILITY SESSION ---
 const getGuestId = () => {
