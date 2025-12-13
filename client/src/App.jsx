@@ -6,6 +6,7 @@ import OptimizationPage from './pages/OptimizationPage';
 import StockListPage from './pages/StockListPage';
 import ChatPage from './pages/ChatPage';
 import LoginPage from './pages/LoginPage'; // Import Halaman Login
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route index element={<OptimizationPage />} />
             <Route path="stocks" element={<StockListPage />} />
             <Route path="chat" element={<ChatPage />} />
+            <Route path="settings" element={<SettingsPage />} />
             
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

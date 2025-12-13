@@ -30,7 +30,7 @@ const HistorySidebar = ({ isOpen, onClose, onLoadHistory }) => {
   }, [isOpen, user]); // Tambahkan user ke dependency agar refresh saat login/logout
 
   return (
-    <div className={`fixed inset-y-0 right-0 w-80 bg-[#1a1d2e] shadow-2xl border-l border-slate-700 transform transition-transform duration-300 z-[60] ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className={`fixed inset-y-0 right-0 w-80 bg-[#1a1d2e] shadow-2xl border-l border-slate-700 transform transition-transform duration-300 z-60 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
       
       {/* Header */}
       <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-[#13151f]">

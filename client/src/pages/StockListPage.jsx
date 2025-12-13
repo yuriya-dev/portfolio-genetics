@@ -505,7 +505,7 @@ export default function StockListPage() {
                         <td className="p-4 text-center pr-6">
                           <button 
                             onClick={(e) => removeFromWatchlist(e, stock.symbol)}
-                            className="p-2 hover:bg-rose-500/20 text-slate-500 hover:text-rose-500 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                            className="p-2 hover:bg-rose-500/20 text-slate-500 hover:text-rose-500 rounded-lg transition-colors"
                             title="Hapus dari Watchlist"
                           >
                               <Trash2 size={18} />
@@ -552,7 +552,7 @@ export default function StockListPage() {
       {/* --- MODAL DETAIL STOCK (Same as before) --- */}
       {selectedStock && (
         <div 
-          className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-60 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setSelectedStock(null)}
         >
           <div 

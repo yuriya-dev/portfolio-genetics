@@ -141,7 +141,7 @@ export default function ChatPage() {
                     <span className="text-xs font-bold text-slate-300">{displayName}</span>
                     <span className="text-[10px] text-slate-500">{formatTime(msg.created_at)}</span>
                   </div>
-                  <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm break-words max-w-full
+                  <div className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm wrap-break-words max-w-full
                     ${isMe 
                       ? 'bg-emerald-600 text-white rounded-tr-none' 
                       : 'bg-slate-700 text-slate-200 rounded-tl-none border border-slate-600'
