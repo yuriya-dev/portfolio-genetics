@@ -24,7 +24,7 @@ export const searchStocks = async (query) => {
   }
 };
 
-// Fungsi Baru: Ambil Detail Saham (Bisa banyak sekaligus)
+// Ambil Detail Saham (Bisa banyak sekaligus)
 export const getStockQuotes = async (symbols) => {
   try {
     const response = await axios.get(`${API_URL}/proxy-quote`, { 
@@ -37,27 +37,55 @@ export const getStockQuotes = async (symbols) => {
   }
 };
 
-// Fungsi Baru: Ambil Data Chart
+// PFungsi Ambil Data Chart
 export const getStockChart = async (symbol, range = '1mo', interval = '1d') => {
   try {
     const response = await axios.get(`${API_URL}/proxy-chart`, { 
         params: { symbol, range, interval } 
     });
-    return response.data.chart?.result?.[0] || null;
+    
+    console.log('📊 Chart API Response:', response.data);
+    
+    // PERBAIKAN: Backend mengirim struktur { chart: { result: [...] } }
+    // Kita ambil result[0] yang berisi { meta, timestamp, indicators }
+    const chartResult = response.data?.chart?.result?.[0];
+    
+    if (!chartResult) {
+      console.warn('⚠️ No chart result found');
+      return null;
+    }
+    
+    console.log('✅ Chart Data Parsed:', {
+      hasTimestamp: !!chartResult.timestamp,
+      timestampLength: chartResult.timestamp?.length || 0,
+      hasIndicators: !!chartResult.indicators,
+      hasPrices: !!chartResult.indicators?.quote?.[0]?.close
+    });
+    
+    return chartResult;
+    
   } catch (error) {
     console.error("Error fetching chart:", error);
     return null;
   }
 };
 
-export const optimizePortfolio = async (tickers, riskAversion) => {
+// --- UPDATED: OPTIMIZE DENGAN USER ID ---
+export const optimizePortfolio = async (tickers, riskAversion, userId = null) => {
   try {
     const guestId = getGuestId();
-    const response = await axios.post(`${API_URL}/optimize`, {
+    const payload = {
       tickers,
       riskAversion,
       sessionId: guestId,
-    });
+    };
+    
+    // Jika login, kirim userId juga untuk disimpan di DB
+    if (userId) {
+        payload.userId = userId;
+    }
+
+    const response = await axios.post(`${API_URL}/optimize`, payload);
     return response.data;
   } catch (error) {
     console.error("Error fetching optimization data:", error);
@@ -65,15 +93,39 @@ export const optimizePortfolio = async (tickers, riskAversion) => {
   }
 };
 
-export const getHistoryList = async () => {
+// --- UPDATED: HISTORY DENGAN USER ID ---
+export const getHistoryList = async (userId = null) => {
   try {
-    const guestId = getGuestId();
-    const response = await axios.get(`${API_URL}/history`, {
-      params: { sessionId: guestId }
-    });
+    const params = {};
+    if (userId) {
+        params.userId = userId; // Prioritas User
+    } else {
+        params.sessionId = getGuestId(); // Fallback Guest
+    }
+
+    const response = await axios.get(`${API_URL}/history`, { params });
     return response.data;
   } catch (error) {
     console.error("Error fetching history:", error);
     throw error;
   }
+};
+
+// --- NEW: WATCHLIST SYNC ---
+export const fetchUserWatchlist = async (userId) => {
+    try {
+        const response = await axios.get(`${API_URL}/watchlist`, { params: { userId } });
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching watchlist:", error);
+        return [];
+    }
+};
+
+export const syncUserWatchlist = async (userId, symbols) => {
+    try {
+        await axios.post(`${API_URL}/watchlist/sync`, { userId, symbols });
+    } catch (error) {
+        console.error("Error syncing watchlist:", error);
+    }
 };

@@ -1,27 +1,21 @@
 const { spawn } = require('child_process');
 const path = require('path');
-const pool = require('../config/db');
+const supabase = require('../config/db'); // Import Supabase Client
 
 const runOptimization = (req, res) => {
-    // 1. Tangkap sessionId dari body request
-    const { tickers, riskAversion, sessionId } = req.body;
+    const { tickers, riskAversion, sessionId, userId } = req.body;
     
-    // ... validasi input ...
     if (!tickers || !Array.isArray(tickers) || tickers.length === 0) {
         return res.status(400).json({ error: "Ticker saham wajib diisi." });
     }
     const riskParam = riskAversion || 0.5;
-    // Gunakan ID default jika kosong (untuk jaga-jaga)
     const currentSession = sessionId || 'anonymous'; 
 
     const tickerString = tickers.join(',');
+    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
     const scriptPath = path.join(__dirname, '../../engine/optimizer.py');
 
-    console.log(`⚙️ Processing: ${tickerString} for Session: ${currentSession}`);
-
-    // Jika di Windows (Local), gunakan 'python'. 
-    // Jika di Linux/Render (Production), gunakan 'python3'.
-    const pythonCommand = process.platform === 'win32' ? 'python' : 'python3';
+    console.log(`⚙️ Processing: ${tickerString} | User: ${userId || 'Guest'}`);
 
     const pythonProcess = spawn(pythonCommand, [scriptPath, tickerString, riskParam]);
 
@@ -40,24 +34,24 @@ const runOptimization = (req, res) => {
             const jsonResult = JSON.parse(dataString);
 
             if (jsonResult.status === 'success') {
-                try {
-                    // QUERY UPDATE: Masukkan session_id
-                    const insertQuery = `
-                        INSERT INTO optimization_history (tickers, risk_aversion, result_data, session_id)
-                        VALUES ($1, $2, $3, $4)
-                        RETURNING id, created_at
-                    `;
-                    
-                    const savedRecord = await pool.query(insertQuery, [
-                        tickers, 
-                        riskParam, 
-                        jsonResult,
-                        currentSession // <--- Simpan ID session
-                    ]);
-                    
-                    jsonResult.history_id = savedRecord.rows[0].id;
-                } catch (dbErr) {
-                    console.error("⚠️ Gagal menyimpan ke DB:", dbErr.message);
+                // --- SIMPAN KE DB MENGGUNAKAN SUPABASE CLIENT ---
+                const { data, error } = await supabase
+                    .from('optimization_history')
+                    .insert([{
+                        tickers: tickers,
+                        risk_aversion: riskParam,
+                        result_data: jsonResult,
+                        session_id: currentSession,
+                        user_id: userId || null
+                    }])
+                    .select('id')
+                    .single();
+
+                if (error) {
+                    console.error("⚠️ Gagal menyimpan ke DB:", error.message);
+                } else if (data) {
+                    jsonResult.history_id = data.id;
+                    console.log(`💾 Saved history ID: ${data.id}`);
                 }
             }
             res.json(jsonResult);
@@ -69,25 +63,9 @@ const runOptimization = (req, res) => {
 };
 
 const getHistory = async (req, res) => {
-    try {
-        // 2. Tangkap sessionId dari Query Params
-        const { sessionId } = req.query;
-        const currentSession = sessionId || 'anonymous';
-
-        // QUERY UPDATE: Tambahkan WHERE clause
-        const result = await pool.query(`
-            SELECT id, created_at, tickers, risk_aversion, result_data 
-            FROM optimization_history 
-            WHERE session_id = $1 
-            ORDER BY created_at DESC 
-            LIMIT 10
-        `, [currentSession]); // <--- Filter berdasarkan session
-
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Gagal mengambil history" });
-    }
+    // Controller ini sudah digantikan oleh userController.getUserHistory
+    // Tapi kita biarkan route ini ada sebagai legacy
+    res.status(404).json({error: "Endpoint deprecated. Use /api/history"});
 };
 
 module.exports = { runOptimization, getHistory };

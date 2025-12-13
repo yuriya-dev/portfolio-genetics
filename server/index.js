@@ -101,22 +101,49 @@ app.get('/api/proxy-chart', async (req, res) => {
     if (!symbol) return res.status(400).json({ error: "Symbol required" });
 
     try {
-        console.log(`📊 Charting: ${symbol} (${range}, ${interval})`);
+        console.log(`📊 Charting: ${symbol} (range: ${range || '1mo'}, interval: ${interval || '1d'})`);
         
-        const queryOptions = { 
-            period1: undefined, // Let library handle it
-            period2: undefined,
-            interval: interval || '1d',
-            includePrePost: false,
-            events: 'history'
+        // PERBAIKAN v3: Hanya gunakan property yang valid
+        const queryOptions = {
+            interval: interval || '1d'
         };
-
-        // Untuk range-based query
-        if (range) {
-            queryOptions.range = range;
+        
+        // Konversi range ke period1 (tanggal mulai)
+        const now = new Date();
+        let startDate;
+        
+        switch(range) {
+            case '5d':
+                startDate = new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000);
+                break;
+            case '1mo':
+                startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                break;
+            case '6mo':
+                startDate = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
+                break;
+            case '1y':
+                startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+                break;
+            default:
+                startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // default 1mo
         }
+        
+        queryOptions.period1 = startDate;
+        queryOptions.period2 = now;
+
+        console.log('🔧 Query Options:', {
+            period1: startDate.toISOString(),
+            period2: now.toISOString(),
+            interval: queryOptions.interval
+        });
 
         const result = await yahooFinance.chart(symbol, queryOptions);
+
+        console.log('📦 Result:', {
+            hasQuotes: !!result?.quotes,
+            quotesLength: result?.quotes?.length || 0
+        });
 
         if (!result || !result.quotes || result.quotes.length === 0) {
             console.log(`⚠️ No chart data for ${symbol}`);
@@ -153,6 +180,7 @@ app.get('/api/proxy-chart', async (req, res) => {
     } catch (error) {
         console.error("❌ Chart Error:", error.message);
         console.error("Error Stack:", error.stack);
+        
         res.json({ 
             chart: { 
                 result: null,

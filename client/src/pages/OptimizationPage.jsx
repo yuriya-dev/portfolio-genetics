@@ -1,57 +1,69 @@
 import React, { useState, useEffect } from 'react';
-import { optimizePortfolio, searchStocks } from '../services/api'; // Import searchStocks
+import { optimizePortfolio, searchStocks } from '../services/api'; 
 import ResultsDashboard from '../components/ResultsDashboard';
 import HistorySidebar from '../components/HistorySidebar';
 import { Loader2, Plus, X, Search, Cpu, History, Trash2, TrendingUp, Globe } from 'lucide-react';
+import { useAuth } from '../context/AuthContext'; // 1. Import Auth
 
 export default function OptimizationPage() {
-  // --- 1. STATE DENGAN AUTO-SAVE (SESSION STORAGE) ---
+  const { user } = useAuth(); // 2. Ambil User yang sedang login
+
+  // --- STATE ---
+  // Gunakan key berbeda untuk storage user vs guest agar tidak bentrok
+  const storageKeyTickers = user ? `opt_tickers_${user.id}` : 'opt_tickers_guest';
+  const storageKeyResult = user ? `opt_result_${user.id}` : 'opt_result_guest';
+
   const [tickers, setTickers] = useState(() => {
-    const saved = sessionStorage.getItem('opt_tickers');
+    const saved = sessionStorage.getItem(storageKeyTickers);
     return saved ? JSON.parse(saved) : ['BBCA.JK', 'ADRO.JK', 'TLKM.JK', 'ANTM.JK'];
   });
 
   const [resultData, setResultData] = useState(() => {
-    const saved = sessionStorage.getItem('opt_result');
+    const saved = sessionStorage.getItem(storageKeyResult);
     return saved ? JSON.parse(saved) : null;
   });
 
   const [newTicker, setNewTicker] = useState('');
-  const [suggestions, setSuggestions] = useState([]); // Data hasil pencarian API
-  const [isSearching, setIsSearching] = useState(false); // Loading state untuk pencarian
+  const [suggestions, setSuggestions] = useState([]); 
+  const [isSearching, setIsSearching] = useState(false); 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [riskAversion, setRiskAversion] = useState(0.5);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // --- 2. EFFECTS ---
+  // --- EFFECTS (Auto Save per User) ---
   useEffect(() => {
-    sessionStorage.setItem('opt_tickers', JSON.stringify(tickers));
-  }, [tickers]);
+    sessionStorage.setItem(storageKeyTickers, JSON.stringify(tickers));
+  }, [tickers, storageKeyTickers]);
 
   useEffect(() => {
     if (resultData) {
-      sessionStorage.setItem('opt_result', JSON.stringify(resultData));
+      sessionStorage.setItem(storageKeyResult, JSON.stringify(resultData));
     }
-  }, [resultData]);
+  }, [resultData, storageKeyResult]);
 
-  // --- 3. FETCH DATA DARI SERVICE (API) ---
+  // Reset state jika user berubah (Login/Logout)
+  useEffect(() => {
+    const savedTickers = sessionStorage.getItem(storageKeyTickers);
+    setTickers(savedTickers ? JSON.parse(savedTickers) : ['BBCA.JK', 'ADRO.JK', 'TLKM.JK', 'ANTM.JK']);
+    
+    const savedResult = sessionStorage.getItem(storageKeyResult);
+    setResultData(savedResult ? JSON.parse(savedResult) : null);
+  }, [user]);
+
+
+  // --- FETCH DATA ---
   useEffect(() => {
     const fetchStocksData = async () => {
-      // Hanya cari jika input lebih dari 1 karakter
       if (!newTicker || newTicker.length < 2) {
         setSuggestions([]);
         return;
       }
-
       setIsSearching(true);
       try {
-        // Panggil fungsi API dari service (searchStocks)
         const data = await searchStocks(newTicker);
-
         if (data.quotes) {
-          // Filter hanya saham (Equity), ETF, dan Reksadana
           const validQuotes = data.quotes
             .filter(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF' || q.quoteType === 'MUTUALFUND')
             .map(q => ({
@@ -62,16 +74,13 @@ export default function OptimizationPage() {
           setSuggestions(validQuotes);
         }
       } catch (err) {
-        console.error("Gagal mengambil data saham:", err);
+        console.error(err);
         setSuggestions([]);
       } finally {
         setIsSearching(false);
       }
     };
-
-    // Debounce: Tunggu 500ms setelah user berhenti mengetik baru fetch
     const timeoutId = setTimeout(fetchStocksData, 500);
-    
     return () => clearTimeout(timeoutId);
   }, [newTicker]);
 
@@ -98,7 +107,7 @@ export default function OptimizationPage() {
   const handleReset = () => {
     setResultData(null);
     setError(null);
-    sessionStorage.removeItem('opt_result');
+    sessionStorage.removeItem(storageKeyResult);
   };
 
   const handleOptimize = async () => {
@@ -106,7 +115,9 @@ export default function OptimizationPage() {
     setError(null);
     setResultData(null);
     try {
-      const data = await optimizePortfolio(tickers, riskAversion);
+      // 3. Kirim User ID ke fungsi optimizePortfolio
+      // Agar hasil tersimpan ke akun database, bukan session tamu
+      const data = await optimizePortfolio(tickers, riskAversion, user?.id);
       setResultData(data);
     } catch (err) {
       setError("Gagal optimasi. Cek koneksi backend.");
@@ -118,11 +129,13 @@ export default function OptimizationPage() {
   return (
     <div className="space-y-6 relative pb-20">
       
-      {/* Header Halaman */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
         <div>
           <h2 className="text-2xl font-bold text-white">Portfolio Optimization</h2>
-          <p className="text-slate-400 text-sm">Gunakan AI untuk meracik komposisi investasi terbaik.</p>
+          <p className="text-slate-400 text-sm">
+            {user ? `Optimasi untuk akun: ${user.email}` : 'Mode Tamu (Hasil bersifat sementara)'}
+          </p>
         </div>
         
         <button 
@@ -138,7 +151,6 @@ export default function OptimizationPage() {
       <div className="bg-[#1a1d2e] p-6 rounded-2xl border border-slate-800 shadow-sm relative z-10">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">1. Pilih Aset Investasi</h3>
         
-        {/* Search Bar Input Style with Dropdown */}
         <div className="flex gap-4 mb-6 relative">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
@@ -146,7 +158,6 @@ export default function OptimizationPage() {
               type="text"
               value={newTicker}
               onFocus={() => setShowSuggestions(true)}
-              // Delay onBlur agar klik pada list sempat tereksekusi
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               onChange={(e) => setNewTicker(e.target.value)}
               placeholder="Cari kode saham (cth: BBCA, TLKM, AAPL)..."
@@ -154,13 +165,12 @@ export default function OptimizationPage() {
               autoComplete="off"
             />
 
-            {/* DROPDOWN SUGGESTIONS */}
+            {/* Dropdown Suggestions */}
             {showSuggestions && newTicker.length > 1 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1d2e] border border-slate-700 rounded-xl shadow-2xl max-h-64 overflow-y-auto z-50 custom-scrollbar">
-                
                 {isSearching ? (
                    <div className="p-4 text-center text-slate-500 text-xs flex items-center justify-center gap-2">
-                      <Loader2 size={14} className="animate-spin" /> Mencari di Yahoo Finance...
+                      <Loader2 size={14} className="animate-spin" /> Mencari...
                    </div>
                 ) : suggestions.length > 0 ? (
                   <>
@@ -187,22 +197,17 @@ export default function OptimizationPage() {
                               <span className="text-xs text-slate-400 block truncate">{stock.name}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 shrink-0">
-                            <span className="text-[10px] bg-slate-700/50 text-slate-500 px-1.5 py-0.5 rounded">{stock.exch}</span>
-                            {isAdded ? (
-                              <span className="text-[10px] font-medium bg-slate-700 text-slate-300 px-2 py-1 rounded">Added</span>
-                            ) : (
-                              <Plus size={16} className="text-slate-500 hover:text-white" />
-                            )}
-                          </div>
+                          {isAdded ? (
+                            <span className="text-[10px] font-medium bg-slate-700 text-slate-300 px-2 py-1 rounded">Added</span>
+                          ) : (
+                            <Plus size={16} className="text-slate-500 hover:text-white" />
+                          )}
                         </button>
                       );
                     })}
                   </>
                 ) : (
-                   <div className="p-4 text-center text-slate-500 text-sm">
-                     Tidak ditemukan. Coba kode lain.
-                   </div>
+                   <div className="p-4 text-center text-slate-500 text-sm">Tidak ditemukan.</div>
                 )}
               </div>
             )}
@@ -218,7 +223,7 @@ export default function OptimizationPage() {
           </button>
         </div>
 
-        {/* Active Tickers Chips */}
+        {/* Active Tickers */}
         <div className="mb-6 bg-[#13151f]/50 p-4 rounded-xl border border-slate-800/50">
           <p className="text-xs text-slate-500 mb-3">Aset Terpilih ({tickers.length})</p>
           <div className="flex flex-wrap gap-2">
@@ -234,16 +239,16 @@ export default function OptimizationPage() {
           </div>
         </div>
 
-        {/* Risk Slider & Action */}
+        {/* Risk Slider */}
         <div className="pt-4 border-t border-slate-800">
            <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">2. Atur Profil Risiko</h3>
            
            <div className="flex flex-col md:flex-row items-end gap-6">
             <div className="flex-1 w-full">
               <div className="flex justify-between mb-2 text-sm">
-                <span className="text-emerald-400 font-medium">Agresif (High Return)</span>
+                <span className="text-emerald-400 font-medium">Agresif</span>
                 <span className="text-slate-400 bg-slate-800 px-2 py-0.5 rounded text-xs">Risk Aversion: <strong className="text-white">{riskAversion}</strong></span>
-                <span className="text-blue-400 font-medium">Konservatif (Low Risk)</span>
+                <span className="text-blue-400 font-medium">Konservatif</span>
               </div>
               <input 
                 type="range" min="0" max="1" step="0.1"
@@ -255,15 +260,10 @@ export default function OptimizationPage() {
             
             <div className="flex gap-3 w-full md:w-auto">
               {resultData && (
-                <button 
-                  onClick={handleReset}
-                  className="px-4 py-3 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-all"
-                  title="Reset Hasil"
-                >
+                <button onClick={handleReset} className="px-4 py-3 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-all">
                   <Trash2 size={20} />
                 </button>
               )}
-              
               <button 
                 onClick={handleOptimize}
                 disabled={loading || tickers.length < 2}
@@ -281,9 +281,9 @@ export default function OptimizationPage() {
         </div>
       </div>
 
-      {/* --- SECTION 2: RESULTS --- */}
+      {/* Results */}
       {error && (
-        <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+        <div className="p-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl flex items-center gap-3 animate-in fade-in">
           <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
           {error}
         </div>
@@ -298,20 +298,19 @@ export default function OptimizationPage() {
           <div className="text-center py-20 border-2 border-dashed border-slate-800 rounded-2xl text-slate-500 bg-[#1a1d2e]/30">
             <Cpu size={48} className="mx-auto mb-4 opacity-20" />
             <h3 className="text-lg font-medium text-slate-400">Siap untuk Optimasi</h3>
-            <p className="text-sm mt-1">Tambahkan saham di atas lalu klik tombol "Jalankan Optimasi".</p>
+            <p className="text-sm mt-1">Tambahkan saham lalu klik "Jalankan Optimasi".</p>
           </div>
         )
       )}
 
-      {/* Sidebar Component */}
       <HistorySidebar 
         isOpen={isHistoryOpen} 
         onClose={() => setIsHistoryOpen(false)} 
         onLoadHistory={(savedData) => {
           setResultData(savedData);
           setTickers(savedData.composition.map(c => c.ticker));
-          sessionStorage.setItem('opt_result', JSON.stringify(savedData));
-          sessionStorage.setItem('opt_tickers', JSON.stringify(savedData.composition.map(c => c.ticker)));
+          sessionStorage.setItem(storageKeyResult, JSON.stringify(savedData));
+          sessionStorage.setItem(storageKeyTickers, JSON.stringify(savedData.composition.map(c => c.ticker)));
         }}
       />
     </div>

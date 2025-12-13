@@ -4,13 +4,17 @@ import {
   LayoutDashboard, BarChart3, MessageSquare, Settings, LogOut, 
   Menu, X, Search, Bell, ChevronDown, UserCircle
 } from "lucide-react";
-import ConfirmModal from "../components/ui/ConfirmModal";
+import ConfirmModal from "../components/ui/ConfirmModal"; // Pastikan path import sesuai
+import { useAuth } from "../context/AuthContext"; // Import Context Auth
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, signOut } = useAuth(); // Ambil data user & fungsi logout
+  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Menentukan judul halaman berdasarkan path
   const getPageTitle = () => {
@@ -20,6 +24,32 @@ export default function DashboardLayout() {
       case '/chat': return 'Public Discussion';
       default: return 'Dashboard';
     }
+  };
+
+  // Fungsi Logout
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
+  // Fungsi Search Sederhana (Redirect ke halaman Stocks)
+  const handleSearch = (e) => {
+    if (e.key === 'Enter') {
+      // Saat ini kita redirect ke halaman Stock List
+      // Nanti bisa dikembangkan untuk memfilter list via URL param
+      navigate('/stocks');
+    }
+  };
+
+  // Helper untuk menampilkan nama user
+  const getUserDisplayName = () => {
+    if (!user) return "Guest User";
+    // Jika ada metadata nama, gunakan itu. Jika tidak, ambil bagian depan email.
+    return user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
   };
 
   const links = [
@@ -73,15 +103,24 @@ export default function DashboardLayout() {
           ))}
         </nav>
 
-        {/* User Profile (Bottom) */}
+        {/* User Profile (Bottom Sidebar) */}
         <div className="p-4 border-t border-slate-800">
           <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-800 transition-colors text-left group">
-            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold">
-              A
+            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold overflow-hidden">
+              {user ? (
+                // Tampilkan inisial jika login
+                user.email?.charAt(0).toUpperCase()
+              ) : (
+                <UserCircle size={24} className="text-slate-400" />
+              )}
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium text-white truncate">Admin User</p>
-              <p className="text-xs text-slate-500 truncate group-hover:text-rose-400 transition-colors">Sign Out</p>
+              <p className="text-sm font-medium text-white truncate">
+                {getUserDisplayName()}
+              </p>
+              <p className="text-xs text-slate-500 truncate group-hover:text-rose-400 transition-colors">
+                {user ? 'Sign Out' : 'Login Required'}
+              </p>
             </div>
             <LogOut size={18} className="text-slate-500 group-hover:text-rose-400 transition-colors" />
           </button>
@@ -101,13 +140,16 @@ export default function DashboardLayout() {
             <h1 className="text-xl font-bold text-white hidden md:block">{getPageTitle()}</h1>
           </div>
 
-          {/* Search Bar (Visual Only for now, or Global Search) */}
+          {/* Search Bar (Functional) */}
           <div className="flex-1 max-w-xl mx-4 hidden md:block">
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
               <input 
                 type="text" 
-                placeholder="What do you want to find?" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearch}
+                placeholder="Type & Press Enter to find stocks..." 
                 className="w-full bg-[#1a1d2e] border border-slate-700 text-slate-200 text-sm rounded-full pl-10 pr-4 py-2.5 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-slate-600"
               />
             </div>
@@ -119,9 +161,15 @@ export default function DashboardLayout() {
               <Bell size={20} />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#13151f]"></span>
             </button>
+            
+            {/* User Profile Header */}
             <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-              <UserCircle size={32} className="text-slate-400" />
-              <span className="text-sm font-medium text-white hidden md:block">Jonathan B.</span>
+              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white">
+                 {user ? user.email?.charAt(0).toUpperCase() : <UserCircle size={20}/>}
+              </div>
+              <span className="text-sm font-medium text-white hidden md:block">
+                {getUserDisplayName()}
+              </span>
               <ChevronDown size={16} className="text-slate-500 hidden md:block" />
             </div>
           </div>
@@ -133,12 +181,13 @@ export default function DashboardLayout() {
         </main>
       </div>
 
+      {/* Logout Confirmation Modal */}
       <ConfirmModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
-        onConfirm={() => navigate('/login')}
+        onConfirm={handleLogout}
         title="Confirm Logout"
-        message="Are you sure you want to end your session?"
+        message="Are you sure you want to log out from your account?"
         variant="danger"
       />
     </div>

@@ -1,10 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { runOptimization, getHistory } = require('../controllers/optimizationController');
+const { runOptimization } = require('../controllers/optimizationController'); // Import runOptimization
+const { getUserWatchlist, syncWatchlist, getUserHistory } = require('../controllers/userController'); // Import Controller Baru
 
-// POST http://localhost:5000/api/optimize
+// --- OPTIMIZATION ROUTES ---
 router.post('/optimize', runOptimization);
-router.get('/history', getHistory);
+
+// --- HISTORY ROUTES (Updated) ---
+// Kita ganti getHistory lama dengan getUserHistory yang lebih pintar
+router.get('/history', getUserHistory);
+
+// --- WATCHLIST ROUTES (New) ---
+router.get('/watchlist', getUserWatchlist);
+router.post('/watchlist/sync', syncWatchlist);
 
 // Test endpoint untuk cek server nyala/tidak
 router.get('/status', (req, res) => {
