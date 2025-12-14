@@ -2,31 +2,31 @@ import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { 
   LayoutDashboard, BarChart3, MessageSquare, Settings, LogOut, 
-  Menu, X, Search, Bell, ChevronDown, UserCircle
+  Menu, X, ChevronDown, UserCircle, LogIn 
 } from "lucide-react";
-import ConfirmModal from "../components/ui/ConfirmModal"; // Pastikan path import sesuai
-import { useAuth } from "../context/AuthContext"; // Import Context Auth
+import ConfirmModal from "../components/ui/ConfirmModal"; 
+import { useAuth } from "../context/AuthContext"; 
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut } = useAuth(); // Ambil data user & fungsi logout
+  const { user, signOut } = useAuth(); 
   
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
-  // Menentukan judul halaman berdasarkan path
+  // State dan fungsi untuk pencarian telah dihapus
+
   const getPageTitle = () => {
     switch(location.pathname) {
       case '/': return 'Portfolio Optimization';
       case '/stocks': return 'Stock Market List';
       case '/chat': return 'Public Discussion';
+      case '/settings': return 'Settings';
       default: return 'Dashboard';
     }
   };
 
-  // Fungsi Logout
   const handleLogout = async () => {
     try {
       await signOut();
@@ -36,20 +36,14 @@ export default function DashboardLayout() {
     }
   };
 
-  // Fungsi Search Sederhana (Redirect ke halaman Stocks)
-  const handleSearch = (e) => {
-    if (e.key === 'Enter') {
-      // Saat ini kita redirect ke halaman Stock List
-      // Nanti bisa dikembangkan untuk memfilter list via URL param
-      navigate('/stocks');
-    }
-  };
-
-  // Helper untuk menampilkan nama user
   const getUserDisplayName = () => {
     if (!user) return "Guest User";
-    // Jika ada metadata nama, gunakan itu. Jika tidak, ambil bagian depan email.
     return user.user_metadata?.full_name || user.email?.split('@')[0] || "User";
+  };
+
+  // Helper untuk mendapatkan avatar URL
+  const getUserAvatar = () => {
+    return user?.user_metadata?.avatar_url || null;
   };
 
   const links = [
@@ -105,25 +99,43 @@ export default function DashboardLayout() {
 
         {/* User Profile (Bottom Sidebar) */}
         <div className="p-4 border-t border-slate-800">
-          <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-800 transition-colors text-left group">
-            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold overflow-hidden">
-              {user ? (
-                // Tampilkan inisial jika login
-                user.email?.charAt(0).toUpperCase()
-              ) : (
-                <UserCircle size={24} className="text-slate-400" />
-              )}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-medium text-white truncate">
-                {getUserDisplayName()}
-              </p>
-              <p className="text-xs text-slate-500 truncate group-hover:text-rose-400 transition-colors">
-                {user ? 'Sign Out' : 'Login Required'}
-              </p>
-            </div>
-            <LogOut size={18} className="text-slate-500 group-hover:text-rose-400 transition-colors" />
-          </button>
+          {user ? (
+            // JIKA USER LOGIN: Tampilkan Profil & Tombol Logout
+            <button onClick={() => setShowLogoutModal(true)} className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-slate-800 transition-colors text-left group">
+              <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold overflow-hidden border border-slate-600">
+                {getUserAvatar() ? (
+                  <img src={getUserAvatar()} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  user.email?.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-medium text-white truncate">
+                  {getUserDisplayName()}
+                </p>
+                <p className="text-xs text-slate-500 truncate group-hover:text-rose-400 transition-colors">
+                  Sign Out
+                </p>
+              </div>
+              <LogOut size={18} className="text-slate-500 group-hover:text-rose-400 transition-colors" />
+            </button>
+          ) : (
+            // JIKA USER TAMU: Tampilkan Tombol Register/Login
+            <button onClick={() => navigate('/login')} className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/30 transition-all text-left group">
+              <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
+                <UserCircle size={24} />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-medium text-white truncate group-hover:text-emerald-400">
+                  Guest Account
+                </p>
+                <p className="text-xs text-slate-500 truncate transition-colors">
+                  Click to Login/Register
+                </p>
+              </div>
+              <LogIn size={18} className="text-slate-500 group-hover:text-emerald-400 transition-colors" />
+            </button>
+          )}
         </div>
       </aside>
 
@@ -140,32 +152,21 @@ export default function DashboardLayout() {
             <h1 className="text-xl font-bold text-white hidden md:block">{getPageTitle()}</h1>
           </div>
 
-          {/* Search Bar (Functional) */}
-          <div className="flex-1 max-w-xl mx-4 hidden md:block">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-emerald-500 transition-colors" size={20} />
-              <input 
-                type="text" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleSearch}
-                placeholder="Type & Press Enter to find stocks..." 
-                className="w-full bg-[#1a1d2e] border border-slate-700 text-slate-200 text-sm rounded-full pl-10 pr-4 py-2.5 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all placeholder:text-slate-600"
-              />
-            </div>
-          </div>
+          {/* Search Bar Dihapus */}
 
           {/* Right Actions */}
           <div className="flex items-center gap-3 md:gap-6">
-            <button className="relative p-2 text-slate-400 hover:text-white transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-[#13151f]"></span>
-            </button>
+            
+            {/* Tombol Notifikasi (Bell) Dihapus */}
             
             {/* User Profile Header */}
-            <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white">
-                 {user ? user.email?.charAt(0).toUpperCase() : <UserCircle size={20}/>}
+            <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => user ? navigate('/settings') : navigate('/login')}>
+              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-white overflow-hidden border border-slate-600">
+                 {getUserAvatar() ? (
+                    <img src={getUserAvatar()} alt="Profile" className="w-full h-full object-cover" />
+                 ) : (
+                    user ? user.email?.charAt(0).toUpperCase() : <UserCircle size={20} className="text-slate-400"/>
+                 )}
               </div>
               <span className="text-sm font-medium text-white hidden md:block">
                 {getUserDisplayName()}
