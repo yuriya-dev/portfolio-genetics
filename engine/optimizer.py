@@ -17,13 +17,13 @@ except Exception as e:
     sys.exit(1)
 
 # Parameter GA (DITINGKATKAN untuk hasil lebih baik)
-START_DATE = '2022-01-01'
-POP_SIZE = 150  # Increased from 100
-GENERATIONS = 200  # Increased from 50 untuk konvergensi lebih baik
+START_DATE = '2020-01-01'
+POP_SIZE = 150 
+GENERATIONS = 300  # Increased untuk konvergensi lebih baik
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 
-# CONSTRAINT PARAMETERS (BARU)
+# CONSTRAINT PARAMETERS
 MIN_WEIGHT = 0.05  # Minimum 5% alokasi per saham
 MAX_WEIGHT = 0.50  # Maximum 50% alokasi per saham
 CONCENTRATION_PENALTY = 0.3  # Penalty untuk portfolio tidak terdiversifikasi
