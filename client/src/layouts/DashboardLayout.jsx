@@ -5,7 +5,9 @@ import {
   Menu, X, ChevronDown, UserCircle, LogIn 
 } from "lucide-react";
 import ConfirmModal from "../components/ui/ConfirmModal"; 
-import { useAuth } from "../context/AuthContext"; 
+import { useAuth } from "../context/AuthContext";
+
+import logo from '../assets/logo.png';
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -65,9 +67,7 @@ export default function DashboardLayout() {
         {/* Logo */}
         <div className="h-20 flex items-center px-8 border-b border-slate-800">
           <div className="flex items-center gap-2 font-bold text-xl tracking-tight text-white">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-slate-900">
-              G
-            </div>
+            <img src={logo} alt="logo" className="h-10 w-10"/>
             Genetic<span className="text-emerald-500">Portfolio</span>
           </div>
           <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden ml-auto text-slate-400">

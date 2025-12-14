@@ -176,23 +176,22 @@ export default function OptimizationPage() {
       </div>
       
       {/* SECTION 1: Investment Balance */}
-      <div className="bg-[#1a1d2e] p-6 rounded-2xl border border-slate-800 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <Wallet size={16} className="text-emerald-500" />
+      <div className="bg-[#1a1d2e] p-4 rounded-xl border border-slate-800 shadow-sm">
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <Wallet size={14} className="text-emerald-500" />
           Saldo Investasi
         </h3>
         
-        <div className="flex flex-col md:flex-row gap-4 items-end">
+        <div className="flex flex-col md:flex-row gap-3 items-center">
           <div className="flex-1 w-full">
-            <label className="block text-xs text-slate-500 mb-2">Masukkan jumlah dana yang ingin diinvestasikan</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">Rp</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">Rp</span>
               <input 
                 type="text"
                 value={investmentBalance ? investmentBalance.toLocaleString('id-ID') : ''}
                 onChange={handleBalanceChange}
                 placeholder="100.000.000"
-                className="w-full bg-[#13151f] border border-slate-700 text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-emerald-500 transition-all text-lg font-semibold"
+                className="w-full bg-[#13151f] border border-slate-700 text-white rounded-lg py-2 pl-10 pr-3 focus:outline-none focus:border-emerald-500 transition-all font-semibold"
               />
             </div>
           </div>
@@ -200,39 +199,39 @@ export default function OptimizationPage() {
           <div className="flex gap-2">
             <button 
               onClick={() => setInvestmentBalance(50000000)}
-              className="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              className="px-3 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors whitespace-nowrap"
             >
-              50 Juta
+              50 Jt
             </button>
             <button 
               onClick={() => setInvestmentBalance(100000000)}
-              className="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              className="px-3 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors whitespace-nowrap"
             >
-              100 Juta
+              100 Jt
             </button>
             <button 
               onClick={() => setInvestmentBalance(500000000)}
-              className="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              className="px-3 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors whitespace-nowrap"
             >
-              500 Juta
+              500 Jt
             </button>
           </div>
-        </div>
-        
-        <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-          <p className="text-sm text-emerald-400 font-medium">
-            Total Dana: <span className="text-xl font-bold">{formatCurrency(investmentBalance)}</span>
-          </p>
+          
+          <div className="px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+            <p className="text-xs text-emerald-400 font-semibold whitespace-nowrap">
+              {formatCurrency(investmentBalance)}
+            </p>
+          </div>
         </div>
       </div>
 
       {/* SECTION 2: Stock Selection */}
-      <div className="bg-[#1a1d2e] p-6 rounded-2xl border border-slate-800 shadow-sm relative z-10">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Pilih Aset Investasi</h3>
+      <div className="bg-[#1a1d2e] p-4 rounded-xl border border-slate-800 shadow-sm relative z-10">
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Pilih Aset Investasi</h3>
         
-        <div className="flex gap-4 mb-6 relative">
+        <div className="flex gap-3 mb-4 relative">
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
             <input 
               type="text"
               value={newTicker}
@@ -240,7 +239,7 @@ export default function OptimizationPage() {
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
               onChange={(e) => setNewTicker(e.target.value)}
               placeholder="Cari kode saham (cth: BBCA, TLKM, AAPL)..."
-              className="w-full bg-[#13151f] border border-slate-700 text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-emerald-500 transition-all uppercase placeholder:normal-case"
+              className="w-full bg-[#13151f] border border-slate-700 text-white rounded-lg py-2 pl-10 pr-3 focus:outline-none focus:border-emerald-500 transition-all uppercase placeholder:normal-case text-sm"
               autoComplete="off"
             />
 
@@ -295,7 +294,7 @@ export default function OptimizationPage() {
           <button 
             onClick={addTicker}
             disabled={!newTicker}
-            className="bg-slate-700 hover:bg-slate-600 text-white px-6 py-3 rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg"
+            className="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2 shadow-lg"
           >
             <Plus size={18} />
             <span className="hidden md:inline">Tambah</span>
@@ -303,12 +302,12 @@ export default function OptimizationPage() {
         </div>
 
         {/* Active Tickers */}
-        <div className="mb-6 bg-[#13151f]/50 p-4 rounded-xl border border-slate-800/50">
-          <p className="text-xs text-slate-500 mb-3">Aset Terpilih ({tickers.length})</p>
+        <div className="mb-4 bg-[#13151f]/50 p-3 rounded-lg border border-slate-800/50">
+          <p className="text-[10px] text-slate-500 mb-2">Aset Terpilih ({tickers.length})</p>
           <div className="flex flex-wrap gap-2">
-            {tickers.length === 0 && <span className="text-slate-600 text-sm italic">Belum ada aset dipilih.</span>}
+            {tickers.length === 0 && <span className="text-slate-600 text-xs italic">Belum ada aset dipilih.</span>}
             {tickers.map(t => (
-              <div key={t} className="flex items-center gap-2 bg-[#1a1d2e] border border-slate-700 px-3 py-1.5 rounded-lg text-sm text-slate-300 shadow-sm hover:border-slate-600 transition-colors group">
+              <div key={t} className="flex items-center gap-2 bg-[#1a1d2e] border border-slate-700 px-2.5 py-1 rounded-lg text-xs text-slate-300 shadow-sm hover:border-slate-600 transition-colors group">
                 <span className="font-mono font-bold text-emerald-400">{t}</span>
                 <button onClick={() => removeTicker(t)} className="text-slate-500 hover:text-rose-400 transition-colors bg-slate-800 rounded-full p-0.5 opacity-0 group-hover:opacity-100">
                   <X size={12} />
@@ -319,14 +318,14 @@ export default function OptimizationPage() {
         </div>
 
         {/* Risk Slider */}
-        <div className="pt-4 border-t border-slate-800">
-           <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Atur Profil Risiko</h3>
+        <div className="pt-3 border-t border-slate-800">
+           <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Atur Profil Risiko</h3>
            
-           <div className="flex flex-col md:flex-row items-end gap-6">
+           <div className="flex flex-col md:flex-row items-end gap-4">
             <div className="flex-1 w-full">
-              <div className="flex justify-between mb-2 text-sm">
+              <div className="flex justify-between mb-2 text-xs">
                 <span className="text-emerald-400 font-medium">Agresif</span>
-                <span className="text-slate-400 bg-slate-800 px-2 py-0.5 rounded text-xs">Risk Aversion: <strong className="text-white">{riskAversion}</strong></span>
+                <span className="text-slate-400 bg-slate-800 px-2 py-0.5 rounded text-[10px]">Risk: <strong className="text-white">{riskAversion}</strong></span>
                 <span className="text-blue-400 font-medium">Konservatif</span>
               </div>
               <input 
@@ -337,23 +336,23 @@ export default function OptimizationPage() {
               />
             </div>
             
-            <div className="flex gap-3 w-full md:w-auto">
+            <div className="flex gap-2 w-full md:w-auto">
               {resultData && (
-                <button onClick={handleReset} className="px-4 py-3 rounded-xl border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-all">
-                  <Trash2 size={20} />
+                <button onClick={handleReset} className="px-3 py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-white hover:bg-slate-700 transition-all">
+                  <Trash2 size={18} />
                 </button>
               )}
               <button 
                 onClick={handleOptimize}
                 disabled={loading || tickers.length < 2}
-                className={`flex-1 md:flex-none px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg 
+                className={`flex-1 md:flex-none px-6 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg text-sm
                   ${loading 
                     ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
                     : 'bg-emerald-500 hover:bg-emerald-600 text-slate-900 shadow-emerald-500/20 hover:shadow-emerald-500/30'}
                 `}
               >
-                {loading ? <Loader2 className="animate-spin" size={20}/> : <Cpu size={20}/>}
-                {loading ? 'Sedang Menghitung...' : 'Jalankan Optimasi'}
+                {loading ? <Loader2 className="animate-spin" size={18}/> : <Cpu size={18}/>}
+                {loading ? 'Menghitung...' : 'Jalankan Optimasi'}
               </button>
             </div>
           </div>
