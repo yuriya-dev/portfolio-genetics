@@ -1,20 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const { runOptimization } = require('../controllers/optimizationController'); // Import runOptimization
-const { getUserWatchlist, syncWatchlist, getUserHistory } = require('../controllers/userController'); // Import Controller Baru
+const { runOptimization } = require('../controllers/optimizationController');
+const { 
+    getUserWatchlist, 
+    syncWatchlist, 
+    getUserHistory,
+    deleteUserHistory,
+    clearAllUserHistory
+} = require('../controllers/userController');
 
 // --- OPTIMIZATION ROUTES ---
 router.post('/optimize', runOptimization);
 
-// --- HISTORY ROUTES (Updated) ---
-// Kita ganti getHistory lama dengan getUserHistory yang lebih pintar
+// --- HISTORY ROUTES ---
 router.get('/history', getUserHistory);
+router.delete('/history/clear-all', clearAllUserHistory);
+router.delete('/history/:id', deleteUserHistory);
 
-// --- WATCHLIST ROUTES (New) ---
+// --- WATCHLIST ROUTES ---
 router.get('/watchlist', getUserWatchlist);
 router.post('/watchlist/sync', syncWatchlist);
 
-// Test endpoint untuk cek server nyala/tidak
+// Test endpoint
 router.get('/status', (req, res) => {
     res.json({ status: "Server is running", timestamp: new Date() });
 });

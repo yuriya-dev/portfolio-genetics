@@ -52,7 +52,7 @@ const syncWatchlist = async (req, res) => {
 
             const { error: insertError } = await supabase
                 .from('user_watchlists')
-                .insert(records); // Supabase otomatis handle batch insert
+                .insert(records);
             
             if (insertError) throw insertError;
         }
@@ -64,7 +64,9 @@ const syncWatchlist = async (req, res) => {
     }
 };
 
-// --- HISTORY HANDLER ---
+// --- HISTORY HANDLERS ---
+
+// 3. Get History List
 const getUserHistory = async (req, res) => {
     const { userId, sessionId } = req.query;
 
@@ -93,4 +95,77 @@ const getUserHistory = async (req, res) => {
     }
 };
 
-module.exports = { getUserWatchlist, syncWatchlist, getUserHistory };
+// 4. Delete Single History
+const deleteUserHistory = async (req, res) => {
+    const { id } = req.params;
+    const { userId, sessionId } = req.query;
+
+    try {
+        let query = supabase
+            .from('optimization_history')
+            .delete()
+            .eq('id', id);
+
+        // Validasi kepemilikan
+        if (userId) {
+            query = query.eq('user_id', userId);
+        } else if (sessionId) {
+            query = query.eq('session_id', sessionId).is('user_id', null);
+        } else {
+            return res.status(400).json({ error: "User ID or Session ID required" });
+        }
+
+        const { error } = await query;
+
+        if (error) throw error;
+
+        res.json({ success: true, message: "History deleted successfully" });
+    } catch (err) {
+        console.error("Supabase Error (Delete History):", err.message);
+        res.status(500).json({ error: "Failed to delete history" });
+    }
+};
+
+// 5. Clear All History
+const clearAllUserHistory = async (req, res) => {
+    const { userId, sessionId } = req.query;
+
+    try {
+        let query = supabase
+            .from('optimization_history')
+            .delete();
+
+        // Hapus semua milik user atau session
+        if (userId) {
+            query = query.eq('user_id', userId);
+        } else if (sessionId) {
+            query = query.eq('session_id', sessionId).is('user_id', null);
+        } else {
+            return res.status(400).json({ error: "User ID or Session ID required" });
+        }
+
+        // Tambahkan filter untuk menghapus semua (neq untuk bypass RLS jika ada)
+        query = query.neq('id', 0); // Trick untuk select all records
+
+        const { error, count } = await query;
+
+        if (error) throw error;
+
+        res.json({ 
+            success: true, 
+            message: "All history cleared successfully",
+            deletedCount: count 
+        });
+    } catch (err) {
+        console.error("Supabase Error (Clear All History):", err.message);
+        res.status(500).json({ error: "Failed to clear all history" });
+    }
+};
+
+module.exports = { 
+    getUserWatchlist, 
+    syncWatchlist, 
+    getUserHistory,
+    deleteUserHistory,
+    clearAllUserHistory
+};

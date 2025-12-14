@@ -6,8 +6,6 @@ import yfinance as yf
 import math
 
 # --- 1. KONFIGURASI & INPUT ---
-# Kita mengambil input dari argumen command line
-# Contoh call: python optimizer.py "BBCA.JK,ADRO.JK,ANTM.JK" 0.5
 try:
     if len(sys.argv) < 3:
         raise ValueError("Argumen kurang. Format: python optimizer.py <TICKERS> <RISK_AVERSION>")
@@ -18,23 +16,27 @@ except Exception as e:
     print(json.dumps({"error": str(e)}))
     sys.exit(1)
 
-# Parameter GA (Bisa juga dibuat dinamis jika perlu)
+# Parameter GA (DITINGKATKAN untuk hasil lebih baik)
 START_DATE = '2022-01-01'
-POP_SIZE = 100
-GENERATIONS = 50  # Dikurangi sedikit agar respons web tidak terlalu lama (bisa disesuaikan)
+POP_SIZE = 150  # Increased from 100
+GENERATIONS = 200  # Increased from 50 untuk konvergensi lebih baik
 RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
+
+# CONSTRAINT PARAMETERS (BARU)
+MIN_WEIGHT = 0.05  # Minimum 5% alokasi per saham
+MAX_WEIGHT = 0.50  # Maximum 50% alokasi per saham
+CONCENTRATION_PENALTY = 0.3  # Penalty untuk portfolio tidak terdiversifikasi
 
 # --- 2. FUNGSI DATA FETCHING ---
 def get_data(tickers):
     try:
         raw_data = yf.download(tickers, start=START_DATE, progress=False)
         
-        # Penanganan MultiIndex (seperti di notebook Anda)
+        # Penanganan MultiIndex
         if isinstance(raw_data.columns, pd.MultiIndex):
             close_cols = [col for col in raw_data.columns if 'close' in str(col).lower()]
             if not close_cols:
-                # Fallback jika nama kolom berbeda
                 if 'Adj Close' in raw_data.columns:
                     data = raw_data['Adj Close']
                 elif 'Close' in raw_data.columns:
@@ -63,11 +65,20 @@ def get_data(tickers):
     except Exception as e:
         raise ValueError(f"Gagal mengambil data saham: {str(e)}")
 
-# --- 3. LOGIKA GENETIC ALGORITHM ---
+# --- 3. LOGIKA GENETIC ALGORITHM (IMPROVED) ---
 
 def create_individual(n_assets):
+    """Create individual dengan constraint min/max weight"""
     w = np.random.rand(n_assets)
-    return w / np.sum(w)
+    w = w / np.sum(w)
+    
+    # Apply min/max constraints
+    w = np.clip(w, MIN_WEIGHT, MAX_WEIGHT)
+    
+    # Re-normalize after clipping
+    w = w / np.sum(w)
+    
+    return w
 
 def population_init(size, n_assets):
     return np.array([create_individual(n_assets) for _ in range(size)])
@@ -78,8 +89,19 @@ def portfolio_performance(weights, mean_returns, cov_matrix):
     return ret, risk
 
 def fitness_func(weights, mean_returns, cov_matrix, risk_aversion):
+    """
+    Fitness dengan penalty untuk konsentrasi
+    Herfindahl Index: sum(w^2) - semakin besar = semakin terkonsentrasi
+    """
     ret, risk = portfolio_performance(weights, mean_returns, cov_matrix)
-    return ret - risk_aversion * risk
+    
+    # Calculate concentration (Herfindahl-Hirschman Index)
+    concentration = np.sum(weights ** 2)
+    
+    # Fitness = Return - (Risk Aversion * Risk) - (Concentration Penalty * Concentration)
+    fitness = ret - (risk_aversion * risk) - (CONCENTRATION_PENALTY * concentration)
+    
+    return fitness
 
 def tournament_selection(pop, fits, k=3):
     idx = np.random.choice(len(pop), k, replace=False)
@@ -87,24 +109,47 @@ def tournament_selection(pop, fits, k=3):
     return pop[best].copy()
 
 def crossover(parent1, parent2, n_assets):
+    """Uniform crossover dengan constraint"""
     alpha = np.random.rand(n_assets)
     child = alpha * parent1 + (1 - alpha) * parent2
-    child = np.clip(child, 0, None) # pastikan tidak negatif
+    
+    # Apply constraints
+    child = np.clip(child, MIN_WEIGHT, MAX_WEIGHT)
+    child = np.clip(child, 0, None)  # Pastikan tidak negatif
+    
+    # Normalize
     if child.sum() == 0:
         child = create_individual(n_assets)
     else:
         child = child / child.sum()
+    
     return child
 
-def mutate(weights, n_assets, mutation_rate=0.1, mutation_strength=0.2):
+def mutate(weights, n_assets, mutation_rate=0.3, mutation_strength=0.15):
+    """
+    Mutation dengan constraint - IMPROVED
+    Mutation rate ditingkatkan untuk eksplorasi lebih baik
+    """
     if np.random.rand() < mutation_rate:
-        i = np.random.randint(0, n_assets)
-        change = np.random.normal(0, mutation_strength)
-        weights[i] = max(weights[i] + change, 0)
+        # Random swap mutation (swap bobot 2 saham)
+        if np.random.rand() < 0.5 and n_assets > 1:
+            i, j = np.random.choice(n_assets, 2, replace=False)
+            weights[i], weights[j] = weights[j], weights[i]
+        else:
+            # Gaussian mutation
+            i = np.random.randint(0, n_assets)
+            change = np.random.normal(0, mutation_strength)
+            weights[i] = max(weights[i] + change, MIN_WEIGHT)
+        
+        # Apply constraints
+        weights = np.clip(weights, MIN_WEIGHT, MAX_WEIGHT)
+        
+        # Normalize
         if weights.sum() == 0:
             weights = create_individual(n_assets)
         else:
             weights = weights / weights.sum()
+    
     return weights
 
 # --- 4. MAIN PROCESS ---
@@ -117,7 +162,7 @@ def run_optimization():
         # 2. Init GA
         pop = population_init(POP_SIZE, n_assets)
         
-        # Untuk menyimpan history (untuk grafik frontend)
+        # Untuk menyimpan history
         history_best_fitness = []
         history_avg_fitness = []
 
@@ -129,14 +174,15 @@ def run_optimization():
             history_best_fitness.append(float(np.max(fits)))
             history_avg_fitness.append(float(np.mean(fits)))
 
-            # Elitism
-            new_pop = []
-            elite_idx = np.argsort(fits)[-2:]
-            new_pop.extend(pop[elite_idx].copy())
+            # Elitism - keep top 10% (IMPROVED)
+            elite_count = max(2, int(POP_SIZE * 0.1))
+            elite_idx = np.argsort(fits)[-elite_count:]
+            new_pop = list(pop[elite_idx].copy())
 
+            # Generate rest of population
             while len(new_pop) < POP_SIZE:
-                p1 = tournament_selection(pop, fits)
-                p2 = tournament_selection(pop, fits)
+                p1 = tournament_selection(pop, fits, k=5)  # Tournament size increased
+                p2 = tournament_selection(pop, fits, k=5)
                 child = crossover(p1, p2, n_assets)
                 child = mutate(child, n_assets)
                 new_pop.append(child)
@@ -149,9 +195,12 @@ def run_optimization():
         best_weights = pop[best_idx]
         best_ret, best_risk = portfolio_performance(best_weights, mean_returns, cov_matrix)
 
-        # 5. Generate Efficient Frontier Data (Sampling for Scatter Plot)
-        # Kita generate sampel portofolio acak agar frontend bisa merender scatter plot
-        # Tidak perlu sebanyak notebook (5000), cukup 200-300 agar JSON ringan
+        # DEBUG OUTPUT (ke stderr agar tidak interfere dengan JSON)
+        print(f"DEBUG: Best weights: {best_weights}", file=sys.stderr)
+        print(f"DEBUG: Min weight: {best_weights.min():.4f}, Max weight: {best_weights.max():.4f}", file=sys.stderr)
+        print(f"DEBUG: Concentration (HHI): {np.sum(best_weights**2):.4f}", file=sys.stderr)
+
+        # 5. Generate Efficient Frontier Data
         n_samples = 300
         frontier_data = []
         for _ in range(n_samples):
@@ -159,34 +208,36 @@ def run_optimization():
             r, s = portfolio_performance(w, mean_returns, cov_matrix)
             frontier_data.append({
                 "return": float(r), 
-                "risk": float(s), 
-                "sharpe": float((r - 0.02) / s) if s != 0 else 0 # Asumsi risk free 2%
+                "risk": float(s),
+                "is_optimal": False
             })
         
-        # Masukkan juga titik terbaik ke frontier data
+        # Add optimal point
         frontier_data.append({
             "return": float(best_ret),
             "risk": float(best_risk),
-            "sharpe": float((best_ret - 0.02) / best_risk) if best_risk != 0 else 0,
-            "is_optimal": True # Flag untuk frontend menandai titik ini
+            "is_optimal": True
         })
 
         # 6. Format JSON Output
         composition = []
         for i, ticker in enumerate(TICKERS):
-            if best_weights[i] > 0.001: # Filter bobot yang sangat kecil
-                composition.append({
-                    "ticker": ticker,
-                    "weight": float(round(best_weights[i], 4)),
-                    "percentage": f"{round(best_weights[i]*100, 2)}%"
-                })
+            composition.append({
+                "ticker": ticker,
+                "weight": float(round(best_weights[i], 4)),
+                "percentage": f"{round(best_weights[i]*100, 2)}%"
+            })
+        
+        # Sort by weight descending
+        composition.sort(key=lambda x: x['weight'], reverse=True)
 
         result = {
             "status": "success",
             "metrics": {
                 "expected_return": float(best_ret),
                 "risk": float(best_risk),
-                "fitness": float(fits[best_idx])
+                "fitness": float(fits[best_idx]),
+                "concentration": float(np.sum(best_weights**2))  # Added for monitoring
             },
             "composition": composition,
             "history": {
@@ -205,6 +256,7 @@ def run_optimization():
             "message": str(e)
         }
         print(json.dumps(error_response))
+        print(f"ERROR: {str(e)}", file=sys.stderr)
 
 if __name__ == "__main__":
     run_optimization()

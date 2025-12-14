@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { optimizePortfolio, searchStocks } from '../services/api'; 
 import ResultsDashboard from '../components/ResultsDashboard';
 import HistorySidebar from '../components/HistorySidebar';
-import { Loader2, Plus, X, Search, Cpu, History, Trash2, TrendingUp, Globe } from 'lucide-react';
-import { useAuth } from '../context/AuthContext'; // 1. Import Auth
+import { Loader2, Plus, X, Search, Cpu, History, Trash2, TrendingUp, Globe, Wallet } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function OptimizationPage() {
-  const { user } = useAuth(); // 2. Ambil User yang sedang login
+  const { user } = useAuth();
 
-  // --- STATE ---
-  // Gunakan key berbeda untuk storage user vs guest agar tidak bentrok
+  // Storage keys
   const storageKeyTickers = user ? `opt_tickers_${user.id}` : 'opt_tickers_guest';
   const storageKeyResult = user ? `opt_result_${user.id}` : 'opt_result_guest';
+  const storageKeyBalance = user ? `opt_balance_${user.id}` : 'opt_balance_guest';
 
   const [tickers, setTickers] = useState(() => {
     const saved = sessionStorage.getItem(storageKeyTickers);
@@ -23,6 +23,11 @@ export default function OptimizationPage() {
     return saved ? JSON.parse(saved) : null;
   });
 
+  const [investmentBalance, setInvestmentBalance] = useState(() => {
+    const saved = sessionStorage.getItem(storageKeyBalance);
+    return saved ? parseFloat(saved) : 100000000; // Default 100 juta
+  });
+
   const [newTicker, setNewTicker] = useState('');
   const [suggestions, setSuggestions] = useState([]); 
   const [isSearching, setIsSearching] = useState(false); 
@@ -32,7 +37,7 @@ export default function OptimizationPage() {
   const [error, setError] = useState(null);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
-  // --- EFFECTS (Auto Save per User) ---
+  // Auto Save
   useEffect(() => {
     sessionStorage.setItem(storageKeyTickers, JSON.stringify(tickers));
   }, [tickers, storageKeyTickers]);
@@ -43,17 +48,23 @@ export default function OptimizationPage() {
     }
   }, [resultData, storageKeyResult]);
 
-  // Reset state jika user berubah (Login/Logout)
+  useEffect(() => {
+    sessionStorage.setItem(storageKeyBalance, investmentBalance.toString());
+  }, [investmentBalance, storageKeyBalance]);
+
+  // Reset state on user change
   useEffect(() => {
     const savedTickers = sessionStorage.getItem(storageKeyTickers);
     setTickers(savedTickers ? JSON.parse(savedTickers) : ['BBCA.JK', 'ADRO.JK', 'TLKM.JK', 'ANTM.JK']);
     
     const savedResult = sessionStorage.getItem(storageKeyResult);
     setResultData(savedResult ? JSON.parse(savedResult) : null);
+
+    const savedBalance = sessionStorage.getItem(storageKeyBalance);
+    setInvestmentBalance(savedBalance ? parseFloat(savedBalance) : 100000000);
   }, [user]);
 
-
-  // --- FETCH DATA ---
+  // Fetch stock suggestions
   useEffect(() => {
     const fetchStocksData = async () => {
       if (!newTicker || newTicker.length < 2) {
@@ -84,7 +95,7 @@ export default function OptimizationPage() {
     return () => clearTimeout(timeoutId);
   }, [newTicker]);
 
-  // --- HANDLERS ---
+  // Handlers
   const addTicker = (e) => {
     e && e.preventDefault();
     if (newTicker && !tickers.includes(newTicker.toUpperCase())) {
@@ -115,15 +126,32 @@ export default function OptimizationPage() {
     setError(null);
     setResultData(null);
     try {
-      // 3. Kirim User ID ke fungsi optimizePortfolio
-      // Agar hasil tersimpan ke akun database, bukan session tamu
       const data = await optimizePortfolio(tickers, riskAversion, user?.id);
-      setResultData(data);
+      // Tambahkan balance ke result data
+      const enrichedData = {
+        ...data,
+        investmentBalance: investmentBalance
+      };
+      setResultData(enrichedData);
     } catch (err) {
       setError("Gagal optimasi. Cek koneksi backend.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  const handleBalanceChange = (e) => {
+    const value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    setInvestmentBalance(value ? parseFloat(value) : 0);
   };
 
   return (
@@ -147,9 +175,60 @@ export default function OptimizationPage() {
         </button>
       </div>
       
-      {/* --- SECTION 1: SEARCH & CONFIG --- */}
+      {/* SECTION 1: Investment Balance */}
+      <div className="bg-[#1a1d2e] p-6 rounded-2xl border border-slate-800 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <Wallet size={16} className="text-emerald-500" />
+          Saldo Investasi
+        </h3>
+        
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="block text-xs text-slate-500 mb-2">Masukkan jumlah dana yang ingin diinvestasikan</label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">Rp</span>
+              <input 
+                type="text"
+                value={investmentBalance ? investmentBalance.toLocaleString('id-ID') : ''}
+                onChange={handleBalanceChange}
+                placeholder="100.000.000"
+                className="w-full bg-[#13151f] border border-slate-700 text-white rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-emerald-500 transition-all text-lg font-semibold"
+              />
+            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setInvestmentBalance(50000000)}
+              className="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+            >
+              50 Juta
+            </button>
+            <button 
+              onClick={() => setInvestmentBalance(100000000)}
+              className="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+            >
+              100 Juta
+            </button>
+            <button 
+              onClick={() => setInvestmentBalance(500000000)}
+              className="px-4 py-2 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+            >
+              500 Juta
+            </button>
+          </div>
+        </div>
+        
+        <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+          <p className="text-sm text-emerald-400 font-medium">
+            Total Dana: <span className="text-xl font-bold">{formatCurrency(investmentBalance)}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* SECTION 2: Stock Selection */}
       <div className="bg-[#1a1d2e] p-6 rounded-2xl border border-slate-800 shadow-sm relative z-10">
-        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">1. Pilih Aset Investasi</h3>
+        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Pilih Aset Investasi</h3>
         
         <div className="flex gap-4 mb-6 relative">
           <div className="flex-1 relative">
@@ -241,7 +320,7 @@ export default function OptimizationPage() {
 
         {/* Risk Slider */}
         <div className="pt-4 border-t border-slate-800">
-           <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">2. Atur Profil Risiko</h3>
+           <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Atur Profil Risiko</h3>
            
            <div className="flex flex-col md:flex-row items-end gap-6">
             <div className="flex-1 w-full">
@@ -309,8 +388,14 @@ export default function OptimizationPage() {
         onLoadHistory={(savedData) => {
           setResultData(savedData);
           setTickers(savedData.composition.map(c => c.ticker));
+          if (savedData.investmentBalance) {
+            setInvestmentBalance(savedData.investmentBalance);
+          }
           sessionStorage.setItem(storageKeyResult, JSON.stringify(savedData));
           sessionStorage.setItem(storageKeyTickers, JSON.stringify(savedData.composition.map(c => c.ticker)));
+          if (savedData.investmentBalance) {
+            sessionStorage.setItem(storageKeyBalance, savedData.investmentBalance.toString());
+          }
         }}
       />
     </div>

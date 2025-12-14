@@ -37,7 +37,7 @@ export const getStockQuotes = async (symbols) => {
   }
 };
 
-// PFungsi Ambil Data Chart
+// Fungsi Ambil Data Chart
 export const getStockChart = async (symbol, range = '1mo', interval = '1d') => {
   try {
     const response = await axios.get(`${API_URL}/proxy-chart`, { 
@@ -46,8 +46,6 @@ export const getStockChart = async (symbol, range = '1mo', interval = '1d') => {
     
     console.log('📊 Chart API Response:', response.data);
     
-    // PERBAIKAN: Backend mengirim struktur { chart: { result: [...] } }
-    // Kita ambil result[0] yang berisi { meta, timestamp, indicators }
     const chartResult = response.data?.chart?.result?.[0];
     
     if (!chartResult) {
@@ -70,7 +68,7 @@ export const getStockChart = async (symbol, range = '1mo', interval = '1d') => {
   }
 };
 
-// --- UPDATED: OPTIMIZE DENGAN USER ID ---
+// --- OPTIMIZE DENGAN USER ID ---
 export const optimizePortfolio = async (tickers, riskAversion, userId = null) => {
   try {
     const guestId = getGuestId();
@@ -80,7 +78,6 @@ export const optimizePortfolio = async (tickers, riskAversion, userId = null) =>
       sessionId: guestId,
     };
     
-    // Jika login, kirim userId juga untuk disimpan di DB
     if (userId) {
         payload.userId = userId;
     }
@@ -93,14 +90,14 @@ export const optimizePortfolio = async (tickers, riskAversion, userId = null) =>
   }
 };
 
-// --- UPDATED: HISTORY DENGAN USER ID ---
+// --- HISTORY DENGAN USER ID ---
 export const getHistoryList = async (userId = null) => {
   try {
     const params = {};
     if (userId) {
-        params.userId = userId; // Prioritas User
+        params.userId = userId;
     } else {
-        params.sessionId = getGuestId(); // Fallback Guest
+        params.sessionId = getGuestId();
     }
 
     const response = await axios.get(`${API_URL}/history`, { params });
@@ -111,7 +108,43 @@ export const getHistoryList = async (userId = null) => {
   }
 };
 
-// --- NEW: WATCHLIST SYNC ---
+// --- DELETE SINGLE HISTORY ---
+export const deleteHistory = async (historyId, userId = null) => {
+  try {
+    const params = {};
+    if (userId) {
+      params.userId = userId;
+    } else {
+      params.sessionId = getGuestId();
+    }
+
+    const response = await axios.delete(`${API_URL}/history/${historyId}`, { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting history:", error);
+    throw error;
+  }
+};
+
+// --- CLEAR ALL HISTORY ---
+export const clearAllHistory = async (userId = null) => {
+  try {
+    const params = {};
+    if (userId) {
+      params.userId = userId;
+    } else {
+      params.sessionId = getGuestId();
+    }
+
+    const response = await axios.delete(`${API_URL}/history/clear-all`, { params });
+    return response.data;
+  } catch (error) {
+    console.error("Error clearing all history:", error);
+    throw error;
+  }
+};
+
+// --- WATCHLIST SYNC ---
 export const fetchUserWatchlist = async (userId) => {
     try {
         const response = await axios.get(`${API_URL}/watchlist`, { params: { userId } });

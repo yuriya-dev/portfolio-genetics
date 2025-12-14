@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 5000;
 // --- 1. KONFIGURASI CORS ---
 app.use(cors({
     origin: '*', 
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 

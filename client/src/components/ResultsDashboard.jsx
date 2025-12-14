@@ -4,14 +4,30 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, 
   ScatterChart, Scatter, ZAxis 
 } from 'recharts';
-import { TrendingUp, AlertTriangle, Activity } from 'lucide-react';
+import { TrendingUp, AlertTriangle, Activity, Wallet, DollarSign } from 'lucide-react';
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
 const ResultsDashboard = ({ data }) => {
   if (!data) return null;
 
-  const { metrics, composition, history, efficient_frontier } = data;
+  const { metrics, composition, history, efficient_frontier, investmentBalance } = data;
+
+  // Format currency
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  // Calculate allocation amounts
+  const compositionWithAmount = composition.map(item => ({
+    ...item,
+    amount: investmentBalance ? item.weight * investmentBalance : 0
+  }));
 
   // Format data history untuk grafik
   const historyData = history.generation.map((gen, i) => ({
@@ -23,7 +39,36 @@ const ResultsDashboard = ({ data }) => {
   return (
     <div className="space-y-6 animate-fade-in">
       
-      {/* 1. KPI CARDS */}
+      {/* Investment Summary Card */}
+      {investmentBalance && (
+        <div className="bg-linear-to-br from-emerald-500/10 to-blue-500/10 p-6 rounded-2xl border border-emerald-500/20 shadow-lg">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 bg-emerald-500/20 rounded-xl">
+              <Wallet size={24} className="text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Total Dana Investasi</h3>
+              <p className="text-3xl font-bold text-white">{formatCurrency(investmentBalance)}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-slate-700/50">
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Estimasi Return Tahunan</p>
+              <p className="text-xl font-bold text-emerald-400">
+                {formatCurrency(investmentBalance * metrics.expected_return)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Return Rate</p>
+              <p className="text-xl font-bold text-emerald-400">
+                {(metrics.expected_return * 100).toFixed(2)}%
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KPI CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
           <div className="flex items-center space-x-3 text-emerald-400 mb-2">
@@ -57,7 +102,69 @@ const ResultsDashboard = ({ data }) => {
         </div>
       </div>
 
-      {/* 2. CHARTS SECTION */}
+      {/* Allocation Table */}
+      {investmentBalance && (
+        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700">
+            <DollarSign size={24} className="text-emerald-400" />
+            <h3 className="text-xl font-bold text-white">Alokasi Dana per Aset</h3>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left border-b border-slate-700">
+                  <th className="pb-3 text-sm font-semibold text-slate-400 uppercase tracking-wider">Saham</th>
+                  <th className="pb-3 text-sm font-semibold text-slate-400 uppercase tracking-wider text-center">Bobot</th>
+                  <th className="pb-3 text-sm font-semibold text-slate-400 uppercase tracking-wider text-right">Nominal</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/50">
+                {compositionWithAmount.map((item, index) => (
+                  <tr key={item.ticker} className="hover:bg-slate-700/30 transition-colors">
+                    <td className="py-4">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full shrink-0" 
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        ></div>
+                        <span className="font-bold text-white">{item.ticker}</span>
+                      </div>
+                    </td>
+                    <td className="py-4 text-center">
+                      <span className="inline-block bg-slate-700 text-slate-200 px-3 py-1 rounded-lg font-mono font-semibold text-sm">
+                        {item.percentage}
+                      </span>
+                    </td>
+                    <td className="py-4 text-right">
+                      <span className="text-emerald-400 font-bold text-lg">
+                        {formatCurrency(item.amount)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-slate-600">
+                  <td className="pt-4 font-bold text-white">TOTAL</td>
+                  <td className="pt-4 text-center">
+                    <span className="inline-block bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-lg font-mono font-bold">
+                      100%
+                    </span>
+                  </td>
+                  <td className="pt-4 text-right">
+                    <span className="text-emerald-400 font-bold text-xl">
+                      {formatCurrency(investmentBalance)}
+                    </span>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Pie Chart - Alokasi */}
@@ -81,6 +188,7 @@ const ResultsDashboard = ({ data }) => {
                 <Tooltip 
                   contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#fff' }}
                   itemStyle={{ color: '#fff' }}
+                  formatter={(value) => `${(value * 100).toFixed(2)}%`}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -142,7 +250,7 @@ const ResultsDashboard = ({ data }) => {
                 <Scatter name="Random" data={efficient_frontier.filter(p => !p.is_optimal)} fill="#3b82f6" fillOpacity={0.4} shape="circle" />
                 
                 {/* Optimal Portfolio */}
-                <Scatter name="Optimal" data={efficient_frontier.filter(p => p.is_optimal)} fill="#ef4444" shape="star" s={200} />
+                <Scatter name="Optimal" data={efficient_frontier.filter(p => p.is_optimal)} fill="#ef4444" shape="star" />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
