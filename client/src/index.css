@@ -2,6 +2,10 @@
 
 @layer base {
 
+  body {
+    @apply bg-[#13151F];
+  }
+
   /* --- GLOBAL SCROLLBAR STYLING --- */
   /* Menerapkan style scrollbar ke seluruh halaman (Chrome/Edge/Safari) */
   ::-webkit-scrollbar {
