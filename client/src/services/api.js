@@ -53,12 +53,12 @@ export const getStockChart = async (symbol, range = '1mo', interval = '1d') => {
       return null;
     }
     
-    console.log('✅ Chart Data Parsed:', {
-      hasTimestamp: !!chartResult.timestamp,
-      timestampLength: chartResult.timestamp?.length || 0,
-      hasIndicators: !!chartResult.indicators,
-      hasPrices: !!chartResult.indicators?.quote?.[0]?.close
-    });
+    // console.log('✅ Chart Data Parsed:', {
+    //   hasTimestamp: !!chartResult.timestamp,
+    //   timestampLength: chartResult.timestamp?.length || 0,
+    //   hasIndicators: !!chartResult.indicators,
+    //   hasPrices: !!chartResult.indicators?.quote?.[0]?.close
+    // });
     
     return chartResult;
     
