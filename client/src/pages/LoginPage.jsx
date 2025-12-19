@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, UserPlus, Loader2, User, UserCircle } from 'lucide-react'; // Import UserCircle
 import { supabase } from '../lib/supabaseClient'; // Import supabase untuk anonymous login
+import logo from '../assets/logo.png';
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -73,8 +74,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[#13151f] p-4">
       <div className="w-full max-w-md bg-[#1a1d2e] p-8 rounded-2xl border border-slate-700 shadow-2xl">
         <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500 mb-4 shadow-lg shadow-emerald-500/20">
-                <span className="text-slate-900 font-bold text-2xl">G</span>
+            <div className="inline-flex items-center justify-center w-12 h-12 mb-4">
+                <img src={logo} alt="logo" />
             </div>
             <h2 className="text-2xl font-bold text-white">
             {isLogin ? 'Welcome Back' : 'Create Account'}
@@ -142,7 +143,7 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 mt-2"
           >
-            {loading ? <Loader2 className="animate-spin" size={20}/> : (isLogin ? <LogIn size={20}/> : <UserPlus size={20}/>)}
+            {loading ? <Loader2 className="animate-spin" size={20}/> : ''}
             {isLogin ? 'Sign In' : 'Create Account'}
           </button>
         </form>
