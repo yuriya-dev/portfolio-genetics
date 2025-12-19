@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { optimizePortfolio, searchStocks } from '../services/api'; 
 import ResultsDashboard from '../components/ResultsDashboard';
 import HistorySidebar from '../components/HistorySidebar';
+import SEO from '../components/SEO';
 import { Loader2, Plus, X, Search, Cpu, History, Trash2, TrendingUp, Globe, Wallet } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -156,7 +157,11 @@ export default function OptimizationPage() {
 
   return (
     <div className="space-y-6 relative pb-20">
-      
+      <SEO 
+        title="Optimasi Portfolio" 
+        description="Optimasi portfolio investasi Anda dengan AI dan data pasar realtime." 
+      />
+
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
         <div>

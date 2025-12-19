@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabaseClient';
+import SEO from '../components/SEO';
 import { User, Camera, Save, Loader2, Mail, AlertCircle, CheckCircle2, UploadCloud } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -100,7 +101,11 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20">
-      
+      <SEO 
+        title="Settings" 
+        description="Kelola informasi profil dan preferensi akun Anda." 
+      />
+
       {/* Header */}
       <div>
         <h2 className="text-2xl font-bold text-white">Account Settings</h2>

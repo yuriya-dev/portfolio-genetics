@@ -3,6 +3,7 @@ import { Send, User, Loader2, MessageSquare } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 export default function ChatPage() {
   const { user } = useAuth(); 
@@ -98,7 +99,11 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] bg-[#1a1d2e] rounded-2xl border border-slate-800 overflow-hidden shadow-2xl relative">
-      
+      <SEO 
+        title="Public Chat" 
+        description="Diskusi terbuka seputar saham & investasi." 
+      />
+
       {/* Chat Header */}
       <div className="p-4 border-b border-slate-800 bg-[#13151f]/95 backdrop-blur flex justify-between items-center z-10">
         <div>

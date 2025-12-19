@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, UserPlus, Loader2, User, UserCircle } from 'lucide-react'; // Import UserCircle
-import { supabase } from '../lib/supabaseClient'; // Import supabase untuk anonymous login
+import { Lock, Loader2, Mail, User, UserCircle, Eye, EyeOff } from 'lucide-react'; // Added Eye, EyeOff
+import { supabase } from '../lib/supabaseClient';
+import SEO from '../components/SEO';
 import logo from '../assets/logo.png';
 
 export default function LoginPage() {
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // State untuk toggle password
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -45,7 +47,6 @@ export default function LoginPage() {
     }
   };
 
-  // Fungsi Login Tamu
   const handleGuestLogin = async () => {
     setLoading(true);
     setError('');
@@ -72,6 +73,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#13151f] p-4">
+      <SEO 
+        title="Login" 
+        description="Optimasi portfolio investasi Anda dengan AI dan data pasar realtime." 
+      />
       <div className="w-full max-w-md bg-[#1a1d2e] p-8 rounded-2xl border border-slate-700 shadow-2xl">
         <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 mb-4">
@@ -113,7 +118,7 @@ export default function LoginPage() {
           <div>
             <label className="block text-slate-400 text-sm mb-1">Email</label>
             <div className="relative">
-                <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input 
                 type="email" 
                 value={email}
@@ -124,18 +129,27 @@ export default function LoginPage() {
                 />
             </div>
           </div>
+
           <div>
             <label className="block text-slate-400 text-sm mb-1">Password</label>
             <div className="relative">
-                <LogIn size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input 
-                type="password" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-[#13151f] border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-white focus:border-emerald-500 outline-none transition-colors"
-                required
+                  type={showPassword ? "text" : "password"} 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  // pr-12 memberikan ruang agar teks tidak tertutup ikon mata
+                  className="w-full bg-[#13151f] border border-slate-700 rounded-xl pl-11 pr-12 py-3 text-white focus:border-emerald-500 outline-none transition-colors"
+                  required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
             </div>
           </div>
           

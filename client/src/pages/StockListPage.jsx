@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { getStockQuotes, getStockChart, searchStocks, fetchUserWatchlist, syncUserWatchlist } from '../services/api';
+import SEO from '../components/SEO';
 import { 
   TrendingUp, TrendingDown, Search, Loader2, X, BarChart3, Globe, 
   Calendar, Plus, Trash2, RefreshCw, ChevronLeft, ChevronRight, 
@@ -369,7 +370,11 @@ export default function StockListPage() {
 
   return (
     <div className="space-y-6 relative pb-20">
-      
+      <SEO 
+        title="Stock List" 
+        description="Optimasi portfolio investasi Anda dengan AI dan data pasar realtime." 
+      />
+
       {/* Header & Search */}
       <div className="flex flex-col gap-6">
          <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
