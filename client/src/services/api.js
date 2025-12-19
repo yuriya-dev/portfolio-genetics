@@ -44,12 +44,12 @@ export const getStockChart = async (symbol, range = '1mo', interval = '1d') => {
         params: { symbol, range, interval } 
     });
     
-    console.log('📊 Chart API Response:', response.data);
+    // console.log('📊 Chart API Response:', response.data);
     
     const chartResult = response.data?.chart?.result?.[0];
     
     if (!chartResult) {
-      console.warn('⚠️ No chart result found');
+      // console.warn('⚠️ No chart result found');
       return null;
     }
     
